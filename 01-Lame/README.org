@@ -4,9 +4,10 @@
 nmap -sC -sV -oA Lame.nmap <ip>
     ## find smb service with version
   #+end_src
+  [[./lame.nmap.nmap]]
   #+NAME: nmap result
   [[./nmap.png]]
-  2. (since ftp backdoor does not work), search <smb 3.0.20>
+  2. (since vsFTPd 2.3.4 backdoor does not work), search <smb 3.0.20>
       + CVE-2007-2447 (msfconsole will give this result)
 
 * problems:
@@ -15,7 +16,6 @@ nmap -sC -sV -oA Lame.nmap <ip>
 ## /etc/samba/smb.conf::[global], add the following line:
 client min protocol = NT1
   #+end_src
-
   
 * CVE-2007-2447 manual script:
    + config smbclient to use NT1
