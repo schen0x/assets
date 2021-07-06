@@ -2,6 +2,8 @@
 
 ## Summary
 
++ the shellshock vuln, affect bash version <=4.3, which is a major version before 2015-10-12.
+
 + the msf keyword is not "apache 2.4.18", but *"apache cgi"*. Hence initially failed to pinpoint the info.
 
 + Hard to know the cgi shellshock vuln. (to know apache parse header as env, and the env parsing lead to a bash vulnerability.)
