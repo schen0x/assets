@@ -41,6 +41,14 @@ cda
 
 ## example-vector
 
+## interactive shell
+
+```sh
+python -c 'import pty; pty.spawn("/bin/bash")'
+  # C-z to background the shell
+stty raw -echo; fg
+```
+
 ## post enum
 
 ```sh
