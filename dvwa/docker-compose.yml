@@ -1,0 +1,10 @@
+version: '3'
+# ref: https://docs.docker.com/compose/compose-file/compose-file-v3/
+services:
+    web:
+        image: vulnerables/web-dvwa
+        container_name: web-dvwa
+        ports:
+            - "8080:80"
+        volumes:
+            - ./solutions:/solutions
