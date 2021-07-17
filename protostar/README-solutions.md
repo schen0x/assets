@@ -30,6 +30,6 @@ Dump of assembler code for function main:
 
 + when input length > buffer.size, the bottom of the stack (ebp) gets overwrited
 
-+ **Think about the pointer. `buffer[65]` points to a higher address.**
-+ `printf("%p\n", (void *) buffer)` gives the `$esp+0x1c` @ `*main + 17` which will be the address of the buffer on the stack.
-+ Hence the variable stored at `[esp+0x5c]` @ `*main + 9` will be overwritten eventually.
++ **Think about the pointer. `buffer[65]` points to a higher address than `buffer[0]`.**
++ The actual memory location of the `buffer` could be printed using `printf("%p\n", (void *) buffer)`, or `$esp+0x1c` @ `*main + 17`.
++ Hence when the buffer overflows, the variable stored at `[esp+0x5c]` @ `*main + 9`, which is higher than the aforementioned `buffer`, will be overwritten eventually.
