@@ -16,6 +16,7 @@
     - [stack4 solution](#stack4-solution)
   - [stack5: jmp esp](#stack5-jmp-esp)
     - [stack5 solution](#stack5-solution)
+  - [stack6](#stack6)
 
 ## stack0
 
@@ -201,3 +202,5 @@ r <<< $(python3 -c "print('A' * 76 )"|xargs echo -en;echo -en '\xf4\x83\x04\x08'
 ```
 
 - A problem: to `jmp esp`, `ebp` must be overwritten (modern system stack cookie)
+
+## stack6
