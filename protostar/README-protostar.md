@@ -20,6 +20,7 @@
     - [stack6 solution](#stack6-solution)
   - [stack7: ret2libc](#stack7-ret2libc)
     - [ret2Libc](#ret2libc)
+    - [ret2Libc advanced](#ret2libc-advanced)
 
 ## stack0
 
@@ -311,3 +312,11 @@ x/s 0x7ffff7f745aa
 ```
 
 - parse the payload
+
+### ret2Libc advanced
+
+- Even when `__libc` change its location on each execution, the relative address offset among __libc functions may remain the same.
+
+- Hence if the address of a `__libc` function could be leaked at run time, the ret2Libc would be possible, because the desired function address could be calculated with the offset.
+
+- Note that the offset should be calculated in the target machine.
