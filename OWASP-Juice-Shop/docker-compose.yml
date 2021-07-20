@@ -1,0 +1,9 @@
+version: '3'
+# ref: https://docs.docker.com/compose/compose-file/compose-file-v3/
+services:
+    juice:
+        image: bkimminich/juice-shop
+        container_name: juice-shop
+        ports:
+            - "3000:3000"
+
