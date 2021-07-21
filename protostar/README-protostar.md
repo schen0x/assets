@@ -21,6 +21,7 @@
   - [stack7: ret2libc](#stack7-ret2libc)
     - [ret2Libc](#ret2libc)
     - [ret2Libc advanced](#ret2libc-advanced)
+    - [misc](#misc)
 
 ## stack0
 
@@ -327,3 +328,9 @@ x/s 0x7ffff7f745aa
 - Hence if the address of a `__libc` function could be leaked at run time, the ret2Libc would be possible, because the desired function address could be calculated with the offset.
 
 - Note that the offset should be calculated in the target machine.
+
+### misc
+
+```sh
+"AAAABBBBCCCCDDDDEEEEFFFFGGGGHHHHIIIIJJJJKKKKLLLLMMMMNNNNOOOOPPPPQQQQRRRRSSSSTTTTUUUUVVVVWWWWXXXXYYYYZZZZ"
+```
