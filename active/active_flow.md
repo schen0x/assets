@@ -3,6 +3,7 @@
 ## Summary
 
 + the full nmap scan took 1666.20 seconds (27 minutes), in the exam, find web server first.
++ run detailed (re)scan on initial enum results with specific target in mind.
 
 ## prev enum
 
@@ -35,7 +36,7 @@ nslookup
 dnsrecon -d 10.129.96.185 -r 10.129.96.0/24
   # 5 seconds, no result
 dnsrecon -d 10.129.96.185 -r 10.0.0.0/8
-  # background
+  # background, no result
 ```
 
 ## detailed enum with nmap
