@@ -1,0 +1,22 @@
+# nmap --script '(smb* and safe) and not (default or version)' -p 445 active.htb
+Nmap scan report for active.htb (10.129.96.185)
+Host is up (0.17s latency).
+
+PORT    STATE SERVICE
+445/tcp open  microsoft-ds
+|_smb-enum-services: ERROR: Script execution failed (use -d to debug)
+
+Host script results:
+| smb-mbenum: 
+|_  ERROR: Failed to connect to browser service: Could not negotiate a connection:SMB: Failed to receive bytes: ERROR
+| smb-protocols: 
+|   dialects: 
+|     2.02
+|_    2.10
+| smb2-capabilities: 
+|   2.02: 
+|     Distributed File System
+|   2.10: 
+|     Distributed File System
+|     Leasing
+|_    Multi-credit operations
