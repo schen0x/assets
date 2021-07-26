@@ -118,6 +118,7 @@ locate impacket
   3. Second, by design, service entity trust TGS blindy(in theory only DC and the service entity knows the NTLM of the service account).
 
 + TODO psexec
++ TODO win10 wget
 
 ## searchsploit
 
