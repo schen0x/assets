@@ -271,7 +271,8 @@ payload=$(echo -en '\x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x87\xe3
 - Summary:
   + Generally, find a *gadget*, return to it, and use its side effect.
   + e.g. redirecting(return) to the "ret" opcode of the original function, whose address is static in the original `.text` section (assume no ASLR), will pop the `esp` to `eip`. Similar to a `pop EIP`.
-  + (? however, a clean-up may happens, which may clean up the args. In a `__stdcall`, callee cleans up the stack; In a `__cdecl` (C && C++ default), caller cleans up the stack.)
+  + (however, a clean-up may happens, which may clean up the args. In a `__stdcall`, callee cleans up the stack (e.g. `ret 8`); In a `__cdecl` (C && C++ default), caller cleans up the stack. (`ret` or `ret 0`))
+  + (i.e `RET <imm16>` (Intel 64 and IA-32 Architectures... Instruction Set Reference) ref: [__STDCALL asm example](https://en.wikibooks.org/wiki/X86_Disassembly/Calling_Convention_Examples#STDCALL))
   + Redirecting the return to an static `JMP ESP` (a loaded library without ASLR enabled) opcode does the same.
 
 ```bash
