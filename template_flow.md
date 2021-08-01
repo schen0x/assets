@@ -12,7 +12,21 @@ sudo nmap -sS -sC -sV -oA ./nmap/full_sS -O -p- <hostslot>
 sudo vim /etc/hosts
 ```
 
-## gobuster
+## web enum
+
+### dns recon
+
+```sh
+nslookup
+  # AD, find DC, etc.
+
+# try zone transfer
+host -l <hostslot> <dnsServer>
+dnsrecon -d <hostslot> -t axfr
+  # dnsrecon -d megacorpone.com -t axfr
+```
+
+### gobuster
 
 ```sh
 dict="/usr/share/wordlists/dirb/common.txt"
@@ -26,7 +40,9 @@ gobuster dir -u http://<hostslot>/cgi-bin/ -w /usr/share/wordlists/dirb/common.t
   # find /user.sh (status 200)
 ```
 
-## searchsploit
+## exploit (user shell)
+
+### searchsploit
 
 ```sh
 search keywords
@@ -39,9 +55,9 @@ cp /usr/share/exploitdb/exploits/example ~/assets/example/temp.php
 cda
 ```
 
-## example-vector
+### example-vector
 
-## interactive shell
+### interactive shell
 
 ```sh
 python -c 'import pty; pty.spawn("/bin/bash")'
@@ -49,14 +65,16 @@ python -c 'import pty; pty.spawn("/bin/bash")'
 stty raw -echo; fg
 ```
 
-## post enum
+## exploit (root)
+
+### post enum
 
 ```sh
 ps aux
 sudo -l
 ```
 
-## privilege escalation
+### privilege escalation
 
 ```sh
 ```
