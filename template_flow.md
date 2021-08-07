@@ -35,7 +35,7 @@ gobuster dir -u http://<hostslot>/ -w $dict -t 20 -e -x php,asp,json,aspx
   # 5min
   # find /cgi-bin/ (status 403)
 
-gobuster dir -u http://<hostslot>/cgi-bin/ -w /usr/share/wordlists/dirb/common.txt -t 20 -e -x cgi,sh,pl,py,rb,php
+gobuster dir -u http://<hostslot>/cgi-bin/ -w $dict -t 20 -e -x cgi,sh,pl,py,rb,php
   # 5min
   # find /user.sh (status 200)
 ```
