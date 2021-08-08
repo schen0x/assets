@@ -10,6 +10,7 @@
 sudo nmap -sS -sC -sV -oA ./nmap/full_sS -O -p- <hostslot>
   # rename-tab
 sudo vim /etc/hosts
+<hostslot>    <name>
 ```
 
 ## web enum
