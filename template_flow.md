@@ -1,5 +1,10 @@
 # tempalte, flow
 
+```sh
+remote-host (hostname during setup): <rhostslot>
+local-host (ip): <lhostslot>
+```
+
 ## Summary
 
 + example
