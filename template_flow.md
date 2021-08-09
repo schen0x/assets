@@ -1,7 +1,7 @@
 # tempalte, flow
 
 ```sh
-remote-host (hostname during setup): <rhostslot>
+remote-host (ip): <rhostslot>
 local-host (ip): <lhostslot>
 ```
 
@@ -16,6 +16,13 @@ sudo nmap -sS -sC -sV -oA ./nmap/full_sS -O -p- <rhostslot>
   # rename-tab
 sudo vim /etc/hosts
 <rhostslot>    <name>
+```
+
+- nc
+
+```sh
+nc -v <rhostslot> <port>
+nc -vC <rhostslot> <port>
 ```
 
 ## web enum
