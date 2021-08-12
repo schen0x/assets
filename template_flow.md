@@ -14,7 +14,7 @@ local-host (ip): <lhostslot>
 ```sh
 sudo nmap -sS -sC -sV -oA ./nmap/full_sS -O -p- <rhostslot>
   # rename-tab
-sudo vim /etc/hosts
+  # sudo vim /etc/hosts
 <rhostslot>    <name>
 ```
 
@@ -26,18 +26,6 @@ nc -vC <rhostslot> <port>
 ```
 
 ## web enum
-
-### dns recon
-
-```sh
-nslookup
-  # AD, find DC, etc.
-
-# try zone transfer
-host -l <rhostslot> <dnsServer>
-dnsrecon -d <rhostslot> -t axfr
-  # dnsrecon -d megacorpone.com -t axfr
-```
 
 ### gobuster
 
@@ -53,7 +41,19 @@ gobuster dir -u http://<rhostslot>/cgi-bin/ -w $dict -t 20 -e -x cgi,sh,pl,py,rb
   # find /user.sh (status 200)
 ```
 
-## exploit (user shell)
+### dns recon
+
+```sh
+nslookup
+  # AD, find DC, etc.
+
+# try zone transfer
+host -l <rhostslot> <dnsServer>
+dnsrecon -d <rhostslot> -t axfr
+  # dnsrecon -d megacorpone.com -t axfr
+```
+
+## usermode
 
 ### searchsploit
 
@@ -61,14 +61,6 @@ gobuster dir -u http://<rhostslot>/cgi-bin/ -w $dict -t 20 -e -x cgi,sh,pl,py,rb
 search keywords
 searchsploit keywords
 ```
-
-```sh
-cdee
-cp /usr/share/exploitdb/exploits/example ~/assets/example/temp.php
-cda
-```
-
-### example-vector
 
 ### interactive shell
 
@@ -78,9 +70,7 @@ python -c 'import pty; pty.spawn("/bin/bash")'
 stty raw -echo; fg
 ```
 
-## exploit (root)
-
-### post enum
+## post enum
 
 ```sh
 ps aux
